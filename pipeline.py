@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 
 import pandas as pd
 import requests
@@ -53,7 +54,7 @@ def heal_schema(expected_cols: list[str], actual_cols: list[str]) -> dict[str, s
 
 def alert(message: str) -> None:
     """Hook for PagerDuty / email / Slack. Logs to stderr for now."""
-    print(f"[ALERT] {message}")
+    print(f"[ALERT] {message}", file=sys.stderr)
 
 
 def process_data(df: pd.DataFrame, expected_schema: list[str]) -> pd.DataFrame:
@@ -69,6 +70,13 @@ def process_data(df: pd.DataFrame, expected_schema: list[str]) -> pd.DataFrame:
     if not mapping:
         alert("Self-healing returned no mapping.")
         raise RuntimeError("Self-healing failed to return a valid mapping.")
+
+    # Guard against a non-bijective mapping: two source columns mapping to the
+    # same target would collide on rename and silently drop data.
+    targets = list(mapping.values())
+    if len(set(targets)) != len(targets):
+        alert(f"Non-bijective mapping rejected (duplicate targets): {mapping}")
+        raise ValueError(f"Self-healing produced a non-bijective mapping: {mapping}")
 
     df = df.rename(columns=mapping)
     missing = [col for col in expected_schema if col not in df.columns]

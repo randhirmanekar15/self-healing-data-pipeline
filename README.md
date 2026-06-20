@@ -26,7 +26,7 @@ It's also deliberately cheap. When the incoming columns already match the expect
 
 An incoming DataFrame is checked against the expected schema. If columns already match, it ships immediately. Only on a mismatch does the pipeline call the local LLM to propose a `{drifted_name: expected_name}` mapping. That mapping is then applied and **re-verified against the schema** — if and only if all required columns are present does the data ship. Anything else triggers an alert.
 
-```
+```text
                  incoming df
                       │
                       ▼
@@ -69,7 +69,7 @@ The verifier is the whole point: the LLM is never trusted to confirm its own fix
 
 ## Project structure
 
-```
+```text
 self-healing-data-pipeline/
 ├── pipeline.py        # heal_schema() + process_data() + a runnable demo
 ├── test_pipeline.py   # tests with the LLM call monkeypatched
